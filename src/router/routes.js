@@ -3,7 +3,11 @@ const routes = [
     path: '/',
     component: () => import('layouts/MainLayout.vue'),
     children: [
-      { path: 'dashboard', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true } }
+      { path: '', redirect: '/dashboard' },
+      { path: 'dashboard', component: () => import('pages/DashboardPage.vue'), meta: { requiresAuth: true } },
+      { path: 'tasks', component: () => import('pages/TasksPage.vue'), meta: { requiresAuth: true } },
+      { path: 'tasks/:id', component: () => import('pages/TaskDetailPage.vue'), meta: { requiresAuth: true } },
+      { path: 'profile', component: () => import('pages/ProfilePage.vue'), meta: { requiresAuth: true } }
     ]
   },
 

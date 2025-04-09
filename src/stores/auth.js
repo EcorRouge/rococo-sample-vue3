@@ -60,6 +60,34 @@ export const useAuthStore = defineStore('auth', {
       );
     },
 
+    updateUser(userData) {
+      this.user = { ...this.user, ...userData };
+      localStorageService.setItem('user', this.user);
+    },
+
+    async requestPasswordReset(payload) {
+      try {
+        const response = await axios.post('/auth/forgot_password', payload);
+        
+        if (response.data?.success) {
+          return true;
+        } else {
+          Notify.create({
+            message: response.data?.message || 'Failed to request password reset',
+            color: "negative"
+          });
+          return false;
+        }
+      } catch (error) {
+        console.error('Error requesting password reset:', error);
+        Notify.create({
+          message: error.response?.data?.message || 'An unknown error occurred',
+          color: "negative"
+        });
+        return false;
+      }
+    },
+
     async logout() {
       localStorageService.clear()
       this.user = null;

@@ -1,1 +1,146 @@
 // app global css in SCSS form
+
+// Base styling
+body {
+    color: $dark;
+    background-color: $grey-1;
+    font-family: $typography-font-family;
+    font-size: $body-font-size;
+    line-height: $body-line-height;
+  }
+  
+  // Typography improvements
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5em;
+    color: $dark;
+  }
+  
+  p {
+    margin-bottom: 1rem;
+  }
+  
+  // Card styling
+  .q-card {
+    border-radius: 12px;
+    box-shadow: $card-box-shadow;
+    transition: box-shadow 0.3s ease;
+    
+    &:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+  }
+  
+  // Button styling
+  .q-btn {
+    letter-spacing: 0.025em;
+    font-weight: 500;
+    
+    &--standard {
+      padding: $button-padding;
+    }
+    
+    &--no-uppercase {
+      text-transform: none;
+    }
+  }
+  
+  // Input field styling
+  .q-field {
+    &--outlined {
+      .q-field__control {
+        border-radius: 8px;
+        
+        &:hover:before {
+          border-color: $primary;
+        }
+      }
+    }
+  }
+  
+  // Custom classes
+  .text-strike {
+    text-decoration: line-through;
+    color: $grey-5;
+  }
+  
+  .rounded-borders-lg {
+    border-radius: 12px;
+  }
+  
+  .page-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+  
+  // Task priority indicators
+  .priority {
+    &--normal {
+      background-color: $grey-3;
+      color: $grey-8;
+    }
+    
+    &--high {
+      background-color: $warning;
+      color: white;
+    }
+    
+    &--urgent {
+      background-color: $negative;
+      color: white;
+    }
+  }
+  
+  // Status indicators
+  .status {
+    &--completed {
+      background-color: $positive;
+      color: white;
+    }
+    
+    &--pending {
+      background-color: $warning;
+      color: white;
+    }
+  }
+  
+  // Custom animations
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+  
+  // Header styling
+  .app-header {
+    background: linear-gradient(135deg, $primary, $secondary);
+    color: white;
+  }
+  
+  // Sidebar navigation styling
+  .app-sidebar {
+    background-color: white;
+    
+    .q-item {
+      border-radius: 8px;
+      margin: 4px 12px;
+      
+      &.q-router-link--active {
+        background-color: transparentize($primary, 0.9);
+        color: $primary;
+        font-weight: 500;
+      }
+    }
+  }
+  
+  // Dialog styling
+  .q-dialog__inner > div {
+    border-radius: 12px;
+    overflow: hidden;
+  }
