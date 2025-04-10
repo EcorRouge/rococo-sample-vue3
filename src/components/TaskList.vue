@@ -1,87 +1,95 @@
 <template>
   <div>
-    <!-- Task Header Section -->
-    <q-card class="q-mb-md">
-      <q-card-section>
+    <!-- Task Actions Bar -->
+    <div class="row q-mb-md items-center">
+      <div class="col-12 col-md-6 q-mb-sm">
         <div class="row items-center">
-          <div class="col">
-            <div class="text-h6 text-weight-bold">My Tasks</div>
-            <p class="text-grey-7 q-mb-sm q-mt-xs">Manage and organize your tasks</p>
-          </div>
-          <div class="col-auto">
-            <q-btn 
-              color="primary" 
-              icon="add" 
-              label="New Task" 
-              @click="showTaskDialog()" 
-              class="q-px-sm q-py-xs"
-              unelevated
-            />
-          </div>
+          <q-btn-toggle
+            v-model="activeFilter"
+            toggle-color="primary"
+            :options="[
+              { label: 'All', value: 'all' },
+              { label: 'Pending', value: 'incomplete' },
+              { label: 'Completed', value: 'completed' }
+            ]"
+            @update:model-value="filterTasks"
+            unelevated
+            class="q-mr-sm"
+          />
+          
+          <q-btn 
+            color="positive" 
+            icon="add" 
+            label="New Task" 
+            @click="showAddDialog = true"
+            unelevated
+          />
         </div>
-        
-        <div class="row items-center q-mt-md">
-          <div class="col">
-            <q-btn-toggle
-              v-model="filter"
-              spread
-              unelevated
-              toggle-color="primary"
-              color="grey-3"
-              text-color="grey-8"
-              :options="[
-                { label: 'All Tasks', value: 'all' },
-                { label: 'Incomplete', value: 'incomplete' },
-                { label: 'Completed', value: 'completed' }
-              ]"
-              @update:model-value="loadTasks"
-              class="q-mb-sm full-width"
-            />
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="q-pa-xl flex flex-center">
-      <q-spinner color="primary" size="48px" />
+      </div>
+      
+      <div class="col-12 col-md-6">
+        <q-input
+          v-model="searchQuery"
+          outlined
+          dense
+          placeholder="Search tasks..."
+          class="q-ml-md-auto"
+        >
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+          <template v-slot:append v-if="searchQuery">
+            <q-icon name="close" class="cursor-pointer" @click="searchQuery = ''" />
+          </template>
+        </q-input>
+      </div>
     </div>
-
+    
+    <!-- Loading State -->
+    <div v-if="taskStore.loading" class="q-pa-md text-center">
+      <q-spinner color="primary" size="3em" />
+      <div class="q-mt-sm">Loading tasks...</div>
+    </div>
+    
+    <!-- Error State -->
+    <div v-else-if="taskStore.error" class="q-pa-md">
+      <q-banner class="bg-negative text-white">
+        <template v-slot:avatar>
+          <q-icon name="error" />
+        </template>
+        {{ taskStore.error }}
+        <template v-slot:action>
+          <q-btn flat label="Retry" @click="loadTasks()" />
+        </template>
+      </q-banner>
+    </div>
+    
     <!-- Empty State -->
-    <q-card v-else-if="tasks.length === 0" class="text-center q-pa-lg">
-      <q-card-section>
-        <q-icon name="inventory_2" size="64px" color="grey-4" />
-        <div class="text-h6 q-mt-md">No tasks found</div>
-        <p class="text-grey-7">
-          {{ emptyStateMessage }}
-        </p>
-        <q-btn 
-          color="primary" 
-          label="Create your first task" 
-          icon="add" 
-          @click="showTaskDialog()" 
-          class="q-mt-sm"
-          unelevated
-        />
-      </q-card-section>
-    </q-card>
-
+    <div v-else-if="filteredTasks.length === 0" class="q-pa-xl text-center">
+      <q-icon name="task" size="5em" color="grey-4" />
+      <div class="text-h6 q-mt-md text-grey-7">No Tasks Found</div>
+      <p class="text-grey-6">
+        {{ searchQuery ? 'No tasks match your search criteria.' : 'You have no tasks yet. Create your first task to get started!' }}
+      </p>
+      <q-btn color="primary" icon="add" label="Create New Task" @click="showAddDialog = true" class="q-mt-sm" />
+    </div>
+    
     <!-- Task List -->
-    <q-card v-else>
+    <div v-else>
       <q-list separator>
-        <q-item 
-          v-for="task in tasks" 
-          :key="task.entity_id" 
-          class="q-py-md task-item"
+        <q-item
+          v-for="task in filteredTasks"
+          :key="task.entity_id"
           clickable
           v-ripple
           @click="viewTask(task)"
+          class="q-py-md"
         >
           <q-item-section avatar>
-            <q-checkbox 
-              v-model="task.is_completed" 
-              @update:model-value="toggleTask(task)" 
-              @click.stop 
+            <q-checkbox
+              v-model="task.is_completed"
+              @click.stop
+              @update:model-value="toggleTask(task)"
               color="primary"
             />
           </q-item-section>
@@ -90,79 +98,55 @@
             <q-item-label :class="{ 'text-strike': task.is_completed }">
               {{ task.title }}
             </q-item-label>
-            <q-item-label caption v-if="task.description" class="q-mt-xs">
+            <q-item-label caption v-if="task.description" class="q-mt-xs text-grey-6">
               {{ task.description.length > 60 ? task.description.slice(0, 60) + '...' : task.description }}
             </q-item-label>
-            <div class="row q-mt-sm">
-              <q-chip 
-                v-if="task.due_date" 
-                dense 
-                outline 
-                size="sm" 
-                icon="event" 
-                :color="isTaskOverdue(task) ? 'negative' : 'grey-7'"
-                class="q-px-sm"
-              >
-                {{ formatDate(task.due_date) }}
-              </q-chip>
-              <q-chip 
-                dense 
-                outline 
-                size="sm" 
-                :color="task.priority === 0 ? 'grey-7' : task.priority === 1 ? 'warning' : 'negative'"
-                class="q-px-sm"
-              >
-                {{
-                  task.priority === 0
-                    ? 'Normal'
-                    : task.priority === 1
-                    ? 'High'
-                    : 'Urgent'
-                }}
-              </q-chip>
-            </div>
+            <q-item-label caption v-if="task.due_date" class="q-mt-xs">
+              <q-icon name="event" size="xs" color="grey-6" />
+              <span class="q-ml-xs">{{ formatDate(task.due_date) }}</span>
+            </q-item-label>
           </q-item-section>
 
           <q-item-section side>
-            <div class="row items-center">
-              <q-btn 
-                flat 
-                round 
-                dense 
-                icon="edit" 
-                color="primary" 
-                @click.stop="showTaskDialog(task)" 
-              />
-              <q-btn 
-                flat 
-                round 
-                dense 
-                icon="delete" 
-                color="negative" 
-                @click.stop="confirmDelete(task)" 
-              />
+            <q-chip
+              dense
+              outline
+              :color="task.priority === 0 ? 'grey-6' : task.priority === 1 ? 'warning' : 'negative'"
+              :text-color="task.priority === 0 ? 'grey-7' : ''"
+              class="q-px-sm"
+            >
+              {{ task.priority === 0 ? 'Normal' : task.priority === 1 ? 'High' : 'Urgent' }}
+            </q-chip>
+          </q-item-section>
+          
+          <q-item-section side>
+            <div class="row">
+              <q-btn flat round dense icon="edit" color="primary" @click.stop="editTask(task)">
+                <q-tooltip>Edit Task</q-tooltip>
+              </q-btn>
+              <q-btn flat round dense icon="delete" color="negative" @click.stop="confirmDelete(task)">
+                <q-tooltip>Delete Task</q-tooltip>
+              </q-btn>
             </div>
           </q-item-section>
         </q-item>
       </q-list>
-    </q-card>
-
-    <!-- Task Form Dialog -->
-    <q-dialog v-model="taskDialog" persistent>
-      <q-card style="min-width: 400px">
-        <q-card-section class="bg-primary text-white">
-          <div class="text-h6">{{ editingTask.entity_id ? 'Edit Task' : 'New Task' }}</div>
+    </div>
+    
+    <!-- Add/Edit Task Dialog -->
+    <q-dialog v-model="showTaskDialog" persistent>
+      <q-card style="min-width: 350px">
+        <q-card-section>
+          <div class="text-h6">{{ editingTask.entity_id ? 'Edit Task' : 'Add New Task' }}</div>
         </q-card-section>
 
-        <q-card-section class="q-pt-md">
+        <q-card-section class="q-pt-none">
           <q-form @submit="saveTask" class="q-gutter-md">
             <q-input 
               v-model="editingTask.title" 
-              label="Title *" 
-              :rules="[val => !!val || 'Title is required']"
+              label="Task Title *" 
+              :rules="[val => !!val || 'Title is required']" 
               outlined
-              autofocus
-              stack-label
             />
             
             <q-input 
@@ -170,25 +154,17 @@
               label="Description" 
               type="textarea" 
               outlined
-              stack-label
-              autogrow
             />
             
             <q-input 
               v-model="editingTask.due_date" 
               label="Due Date" 
               outlined
-              stack-label
-              :rules="[dateValidator]"
             >
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date 
-                      v-model="editingTask.due_date" 
-                      mask="YYYY-MM-DDTHH:mm:ss" 
-                      color="primary"
-                    />
+                    <q-date v-model="editingTask.due_date" mask="YYYY-MM-DD" />
                   </q-popup-proxy>
                 </q-icon>
               </template>
@@ -201,44 +177,28 @@
               emit-value
               map-options
               outlined
-              stack-label
             />
-
-            <div class="row justify-end q-mt-md">
-              <q-btn 
-                label="Cancel" 
-                color="grey-7" 
-                v-close-popup 
-                flat
-                class="q-mx-sm"
-              />
-              <q-btn 
-                label="Save" 
-                type="submit" 
-                color="primary" 
-                unelevated
-              />
-            </div>
           </q-form>
         </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Cancel" color="grey-7" v-close-popup />
+          <q-btn flat label="Save" color="primary" @click="saveTask" :loading="saving" />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- Delete Confirmation Dialog -->
-    <q-dialog v-model="deleteDialog">
+    <q-dialog v-model="showDeleteDialog">
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="delete" color="negative" text-color="white" />
-          <span class="q-ml-sm text-body1">Are you sure you want to delete this task?</span>
-        </q-card-section>
-
-        <q-card-section class="text-grey-7 q-pt-none">
-          This action cannot be undone.
+          <span class="q-ml-sm">Are you sure you want to delete this task?</span>
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn flat label="Cancel" color="primary" v-close-popup />
-          <q-btn flat label="Delete" color="negative" @click="deleteTask" v-close-popup />
+          <q-btn flat label="Delete" color="negative" @click="deleteTask" v-close-popup :loading="deleting" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -247,231 +207,177 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
-import { format, parseISO, isAfter, startOfDay } from 'date-fns'
-import taskService from '@/services/task.service'
+import { format, parseISO } from 'date-fns'
+import { useTaskStore } from '@/stores/task'
 
-const $q = useQuasar()
 const router = useRouter()
 const route = useRoute()
+const taskStore = useTaskStore()
 
 // State
-const tasks = ref([])
-const filter = ref('all')
-const taskDialog = ref(false)
-const deleteDialog = ref(false)
-const taskToDelete = ref(null)
-const loading = ref(true)
+const showAddDialog = ref(false)
+const showTaskDialog = ref(false)
+const showDeleteDialog = ref(false)
 const editingTask = ref({
   title: '',
   description: '',
-  due_date: null,
+  due_date: '',
   priority: 0,
   is_completed: false
 })
+const taskToDelete = ref(null)
+const activeFilter = ref('all')
+const searchQuery = ref('')
+const saving = ref(false)
+const deleting = ref(false)
 
-// Priority options with colors
+// Priority options
 const priorityOptions = [
-  { label: 'Normal', value: 0, color: 'grey-7' },
-  { label: 'High', value: 1, color: 'warning' },
-  { label: 'Urgent', value: 2, color: 'negative' }
+  { label: 'Normal', value: 0 },
+  { label: 'High', value: 1 },
+  { label: 'Urgent', value: 2 }
 ]
 
-// Computed
-const emptyStateMessage = computed(() => {
-  if (filter.value === 'all') return 'You have no tasks yet. Create one to get started!';
-  if (filter.value === 'incomplete') return 'Great job! You have no incomplete tasks.';
-  return 'You have no completed tasks yet. Mark tasks as complete to see them here.';
-});
-
-// Watch for query parameters
-watch(() => route.query, (newQuery) => {
-  if (newQuery.filter) {
-    filter.value = newQuery.filter;
-    loadTasks();
+// Computed properties
+const filteredTasks = computed(() => {
+  let tasks = [...taskStore.tasks]
+  
+  // Apply search filter if query exists
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    tasks = tasks.filter(task => 
+      task.title.toLowerCase().includes(query) || 
+      (task.description && task.description.toLowerCase().includes(query))
+    )
   }
   
-  if (newQuery.action === 'create') {
-    showTaskDialog();
-  }
-}, { immediate: true });
-
-// Load tasks on component mount
-onMounted(() => {
-  if (!route.query.filter) {
-    loadTasks();
-  }
+  return tasks
 })
 
-// Load tasks based on filter
-async function loadTasks() {
-  loading.value = true;
-  try {
-    tasks.value = await taskService.getTasks(filter.value);
-    
-    // Sort by priority (highest first) and due date (earliest first)
-    tasks.value.sort((a, b) => {
-      // First by completion status
-      if (a.is_completed !== b.is_completed) {
-        return a.is_completed ? 1 : -1;
-      }
-      
-      // Then by priority (higher priority first)
-      if (a.priority !== b.priority) {
-        return b.priority - a.priority;
-      }
-      
-      // Then by due date (if exists)
-      if (a.due_date && b.due_date) {
-        return new Date(a.due_date) - new Date(b.due_date);
-      }
-      
-      // Tasks with due dates come before those without
-      if (a.due_date && !b.due_date) return -1;
-      if (!a.due_date && b.due_date) return 1;
-      
-      // Finally by creation date (newest first)
-      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-    });
-    
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to load tasks: ' + (error.message || 'Unknown error'),
-      icon: 'error',
-      position: 'top'
-    })
-  } finally {
-    loading.value = false;
+// Watch for route query changes
+watch(() => route.query, (newQuery) => {
+  // Handle filter from route
+  if (newQuery.filter) {
+    activeFilter.value = newQuery.filter
+    filterTasks(newQuery.filter)
   }
-}
-
-// Format date for display
-function formatDate(dateString) {
-  if (!dateString) return '';
-  try {
-    return format(parseISO(dateString), 'MMM d, yyyy');
-  } catch {
-    return dateString;
+  
+  // Handle create action from route
+  if (newQuery.action === 'create') {
+    showAddDialog.value = true
   }
-}
+}, { immediate: true })
 
-// Check if task is overdue
-function isTaskOverdue(task) {
-  if (!task.due_date || task.is_completed) return false;
-  const today = startOfDay(new Date());
-  const dueDate = startOfDay(parseISO(task.due_date));
-  return isAfter(today, dueDate);
-}
-
-// Validate date format
-function dateValidator(value) {
-  if (!value) return true;
-  const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
-  return regex.test(value) || 'Invalid date format (YYYY-MM-DDTHH:mm:ss)';
-}
-
-// View task detail
-function viewTask(task) {
-  router.push(`/tasks/${task.entity_id}`);
-}
-
-// Open task dialog for create/edit
-function showTaskDialog(task = null) {
-  if (task) {
-    // Clone task for editing to avoid modifying the original object
-    editingTask.value = { ...task };
-  } else {
-    // Reset form for new task
+// Watch for showAddDialog changes
+watch(showAddDialog, (newVal) => {
+  if (newVal) {
+    // Reset editing task and show dialog
     editingTask.value = {
       title: '',
       description: '',
-      due_date: null,
+      due_date: '',
       priority: 0,
       is_completed: false
-    };
+    }
+    showTaskDialog.value = true
   }
-  taskDialog.value = true;
+})
+
+// Lifecycle hooks
+onMounted(() => {
+  loadTasks()
+})
+
+// Methods
+async function loadTasks() {
+  await taskStore.fetchTasks(activeFilter.value)
 }
 
-// Save task (create or update)
+function formatDate(dateString) {
+  if (!dateString) return ''
+  try {
+    return format(parseISO(dateString), 'MMM d, yyyy')
+  } catch {
+    return dateString
+  }
+}
+
+function filterTasks(filter) {
+  activeFilter.value = filter
+  loadTasks()
+  
+  // Update route query
+  router.replace({ query: { ...route.query, filter } })
+}
+
+function viewTask(task) {
+  router.push(`/tasks/${task.entity_id}`)
+}
+
+async function toggleTask(task) {
+  await taskStore.toggleTask(task.entity_id)
+}
+
+function editTask(task) {
+  editingTask.value = { ...task }
+  showTaskDialog.value = true
+}
+
+function confirmDelete(task) {
+  taskToDelete.value = task
+  showDeleteDialog.value = true
+}
+
 async function saveTask() {
+  if (!editingTask.value.title) return
+  
+  saving.value = true
+  
   try {
     if (editingTask.value.entity_id) {
       // Update existing task
-      await taskService.updateTask(editingTask.value.entity_id, editingTask.value);
+      await taskStore.updateTask(editingTask.value.entity_id, editingTask.value)
     } else {
       // Create new task
-      await taskService.createTask(editingTask.value);
+      await taskStore.createTask(editingTask.value)
     }
-    taskDialog.value = false;
     
-    // Clear the create action from URL if present
+    // Close dialog
+    showTaskDialog.value = false
+    
+    // Clear route query
     if (route.query.action === 'create') {
-      router.replace({ query: { ...route.query, action: undefined }});
+      router.replace({ query: { filter: activeFilter.value } })
     }
-    
-    loadTasks();
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to save task: ' + (error.message || 'Unknown error'),
-      icon: 'error'
-    });
+  } finally {
+    saving.value = false
   }
 }
 
-// Toggle task completion status
-async function toggleTask(task) {
-  try {
-    await taskService.toggleTask(task.entity_id);    
-    loadTasks(); // Reload to get updated task data
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to update task status: ' + (error.message || 'Unknown error'),
-      icon: 'error'
-    });
-    // Revert checkbox state if API call fails
-    task.is_completed = !task.is_completed;
-  }
-}
-
-// Show delete confirmation dialog
-function confirmDelete(task) {
-  taskToDelete.value = task;
-  deleteDialog.value = true;
-}
-
-// Delete task
 async function deleteTask() {
-  if (!taskToDelete.value) return;
-
+  if (!taskToDelete.value) return
+  
+  deleting.value = true
+  
   try {
-    await taskService.deleteTask(taskToDelete.value.entity_id);
-    loadTasks();
-  } catch (error) {
-    $q.notify({
-      type: 'negative',
-      message: 'Failed to delete task: ' + (error.message || 'Unknown error'),
-      icon: 'error'
-    });
+    await taskStore.deleteTask(taskToDelete.value.entity_id)
+    taskToDelete.value = null
+  } finally {
+    deleting.value = false
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.task-item {
-  transition: background-color 0.2s ease;
-  
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-  }
-}
-
 .text-strike {
   text-decoration: line-through;
-  color: $grey-5;
+  color: #aaa;
+}
+
+@media (min-width: 768px) {
+  .q-ml-md-auto {
+    margin-left: auto;
+  }
 }
 </style>

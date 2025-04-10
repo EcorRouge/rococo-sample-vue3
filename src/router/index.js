@@ -27,10 +27,14 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE)
   })
 
-
   // Add a global navigation guard
-  Router.beforeEach((to, from, next) => {
+  Router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore(); // Initialize the auth store
+    
+    // Initialize auth store on first navigation
+    if (!authStore.initialized) {
+      await authStore.initialize();
+    }
 
     // Check if the route requires authentication
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
