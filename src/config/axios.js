@@ -13,11 +13,12 @@ const apiClient = axios.create({
 // Add a request interceptor to include the auth token
 apiClient.interceptors.request.use((config) => {
   const authStore = useAuthStore();
+  console.log(authStore.accessToken, "aaaauuu")
   if (authStore.isAuthenticated) {
-    config.headers.Authorization = `Bearer ${authStore.user.token}`;
+    config.headers.Authorization = `Bearer ${authStore.accessToken}`;
   }
   return config;
 });
-  
+
 
 export default apiClient;

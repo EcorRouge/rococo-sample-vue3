@@ -25,13 +25,13 @@
         />
 
         <!-- Save Button -->
-<!--        <q-btn-->
-<!--          label="Save"-->
-<!--          color="primary"-->
-<!--          class="full-width q-mt-lg"-->
-<!--          @click="saveProfile"-->
-<!--          :disabled="!firstName || !lastName"-->
-<!--        />-->
+        <q-btn
+          label="Update"
+          color="primary"
+          class="full-width q-mt-lg"
+          @click="saveProfile"
+          :disabled="!firstName || !lastName"
+        />
       </q-card-section>
     </q-card>
   </q-page>
@@ -49,17 +49,17 @@ const firstName = ref(user ? user.first_name : '')
 const lastName = ref(user ? user.last_name : '')
 
 // Save profile function (this can be replaced with actual logic for updating the profile)
-// function saveProfile() {
-//   console.log('Saving profile...', {
-//     firstName: firstName.value,
-//     lastName: lastName.value
-//   })
-//   // Update the local storage or make an API call to save the changes
-//   localStorageService.setItem('user', {
-//     first_name: firstName.value,
-//     last_name: lastName.value
-//   })
-// }
+function saveProfile() {
+  console.log('Saving profile...', {
+    firstName: firstName.value,
+    lastName: lastName.value
+  })
+  // Update the local storage or make an API call to save the changes
+  localStorageService.setItem('user', {
+    first_name: firstName.value,
+    last_name: lastName.value
+  })
+}
 </script>
 
 <style scoped>

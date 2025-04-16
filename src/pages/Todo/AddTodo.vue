@@ -83,21 +83,24 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useTaskStore } from 'stores/taskStore.js'
 
 // Define reactive properties
 const newTodo = ref('')
 const searchQuery = ref('')
-const todos = ref([
-  { text: 'Learn Vue 3', completed: false },
-  { text: 'Build a To-Do app', completed: false }
-])
+const taskStore = useTaskStore()
+
+// Fetch tasks on mounted
+onMounted(() => {
+  taskStore.getTasks() // Fetch tasks from the API
+})
 
 // Filter logic for todos
 const filter = ref('all')
 
 const filteredTodos = computed(() => {
-  let filteredList = todos.value.filter(todo => {
+  let filteredList = taskStore.tasks.filter(todo => {
     return todo.text.toLowerCase().includes(searchQuery.value.toLowerCase())
   })
 
@@ -110,27 +113,27 @@ const filteredTodos = computed(() => {
   return filteredList
 })
 
-// Remaining todos count
 const remainingTodos = computed(() => {
-  return todos.value.filter(todo => !todo.completed).length
+  return taskStore.tasks.filter(todo => !todo.completed).length
 })
 
 // Add new todo (on button click)
-function addTodo() {
-  if (newTodo.value.trim() !== '') {
-    todos.value.push({ text: newTodo.value.trim(), completed: false })
-    newTodo.value = '' // Clear the input after adding the task
+async function addTodo() {
+  if (newTodo.value.trim()) {
+    await taskStore.addTask(newTodo.value.trim())
+    newTodo.value = ''
+    await taskStore.getTasks()
   }
 }
 
 // Update todo completion status
 function updateTodo(index) {
-  todos.value[index].completed = !todos.value[index].completed
+  taskStore.toggleTaskCompletion(index)
 }
 
 // Delete todo
 function deleteTodo(index) {
-  todos.value.splice(index, 1)
+  taskStore.deleteTask(index)
 }
 
 // Set the current filter
