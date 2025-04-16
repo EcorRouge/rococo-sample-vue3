@@ -10,5 +10,5 @@ export default {
   },
   clear() {
     localStorage.clear();
-  }
+  },
 }

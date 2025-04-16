@@ -35,3 +35,27 @@ export async function handleAuthRequest(store, requestFn, router) {
 
   return true; // Indicate success
 }
+
+export async function handleForgotPasswordRequest(store, requestFn, router) {
+  let response;
+  try {
+    response = await requestFn(); // Execute the API request
+  } catch {
+    Notify.create({
+      message: 'An unknown error occurred',
+      color: 'danger',
+    });
+    return false;
+  }
+
+  if (!response.data?.success) {
+    Notify.create({
+      message: response.data?.message,
+      color: 'danger',
+    });
+    return false;
+  }
+  router.push('/login')
+
+  return true
+}
