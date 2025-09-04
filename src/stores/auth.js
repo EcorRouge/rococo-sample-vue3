@@ -2,7 +2,7 @@ import { defineStore, acceptHMRUpdate } from 'pinia'
 import { Notify } from 'quasar'
 import axios from 'config/axios'
 import localStorageService from 'services/localStorage.service'
-import { handleAuthRequest } from '@/utils/apiHelper'
+import { handleAuthRequest, handleOAuthRequest } from '@/utils/apiHelper'
 
 // Constants for localStorage keys
 const STORAGE_KEYS = {
@@ -251,7 +251,7 @@ export const useAuthStore = defineStore('auth', {
      */
     async loginWithOAuth(provider, payload) {
       try {
-        return await handleAuthRequest(
+        return await handleOAuthRequest(
           this, 
           () => axios.post(`/auth/${provider}/exchange`, payload), 
           this.router

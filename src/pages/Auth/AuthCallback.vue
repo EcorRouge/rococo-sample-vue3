@@ -13,6 +13,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from 'src/stores/auth'
 import { storeToRefs } from 'pinia'
 import authService from 'src/services/auth.service'
+import { Notify } from 'quasar'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -59,14 +60,34 @@ onMounted(async () => {
     
     // Exchange tokens with Flask backend
     const result = await authStore.loginWithOAuth(provider, requestBody)
-    if (!result.success) {
-      oauthErrorMessage.value = result.error
+    
+    if (result.success) {
+      // OAuth login successful - clear invitation token and redirect to dashboard
+      authStore.clearInvitationToken()
+      authStore.clearOAuthErrorMessage()
+      
+      // Show success notification
+      Notify.create({
+        message: `Successfully signed in with ${provider}!`,
+        color: 'positive',
+        position: 'top',
+        timeout: 3000,
+      })
+      
+      // Redirect to dashboard
+      router.push('/dashboard')
+    } else {
+      // OAuth login failed - show error and redirect to login
+      if (result.error) {
+        oauthErrorMessage.value = result.error
+      } else {
+        oauthErrorMessage.value = `Failed to sign in with ${provider}. Please try again.`
+      }
+      
       router.push({
         path: '/login',
+        query: { error: 'oauth_failed' }
       })
-      return
-    } else {
-      authStore.clearInvitationToken()
     }
     
   } catch (error) {
