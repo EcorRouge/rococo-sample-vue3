@@ -1,9 +1,9 @@
 {
   "name": "rococo-sample-vue3",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A sample frontend application for a Rococo based backend",
   "productName": "Rococo Sample App",
-  "author": "asymness <asym1999@gmail.com>",
+  "author": "asymness <asym1999@gmail.com>, Axel <axelpcxs3@gmail.com>",
   "type": "module",
   "private": true,
   "scripts": {
