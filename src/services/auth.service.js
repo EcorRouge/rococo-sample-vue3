@@ -16,10 +16,14 @@ function getConfig(provider) {
     return { ...base,
       authority: 'https://login.microsoftonline.com/common/v2.0',
       client_id: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
-      scope: 'User.read',
-      extraQueryParams: {
-        prompt: "consent"
-      }
+      scope: 'User.Read',
+      response_mode: 'query',  // Ensure code is returned in query parameters
+      // No prompt parameter - Microsoft will handle returning users automatically
+      // Only show consent screen for new users who haven't authorized the app
+      extraQueryParams: {},
+      // Microsoft-specific settings for better UX
+      loadUserInfo: true,
+      automaticSilentRenew: true
     };
   }
   
@@ -32,8 +36,8 @@ function getConfig(provider) {
       code_challenge_method: 'S256',
       // Add additional Google OAuth parameters
       extraQueryParams: {
-        access_type: 'offline',
-        prompt: 'consent'
+        access_type: 'offline'
+        // No prompt parameter - Google will handle returning users automatically
       }
     };
   }

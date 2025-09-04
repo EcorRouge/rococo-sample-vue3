@@ -30,6 +30,9 @@ onMounted(async () => {
     const urlParams = new URLSearchParams(window.location.search)
     const error = urlParams.get('error')
     
+    // Debug: Log all URL parameters
+    console.log('OAuth Callback - URL Parameters:', Object.fromEntries(urlParams.entries()))
+    
     if (error === 'access_denied') {
       // Redirect to login with error message
       router.push({
@@ -41,6 +44,10 @@ onMounted(async () => {
     
     let provider = await authService.getStateDataValue('provider')
     let stateInvitationToken = await authService.getStateDataValue('invitation_token', false)
+    
+    // Debug: Log provider and invitation token
+    console.log('OAuth Callback - Provider:', provider)
+    console.log('OAuth Callback - Invitation Token:', stateInvitationToken)
     
     // Prepare the request body with available fields
     const requestBody = {
@@ -56,7 +63,24 @@ onMounted(async () => {
     
     // Get the authorization code from URL params if available
     const code = urlParams.get('code')
-    if (code) requestBody.code = code
+    console.log('OAuth Callback - Authorization Code:', code)
+    
+    if (!code) {
+      // No authorization code - this means the OAuth flow didn't complete properly
+      console.error('OAuth Callback - No authorization code received')
+      oauthErrorMessage.value = 'OAuth authentication failed: No authorization code received. Please try again.'
+      router.push({
+        path: '/login',
+        query: { error: 'oauth_no_code' }
+      })
+      return
+    }
+    
+    // Add code to request body
+    requestBody.code = code
+    
+    // Debug: Log final request body
+    console.log('OAuth Callback - Request Body:', requestBody)
     
     // Exchange tokens with Flask backend
     const result = await authStore.loginWithOAuth(provider, requestBody)
