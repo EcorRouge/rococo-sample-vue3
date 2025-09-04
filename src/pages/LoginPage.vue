@@ -28,9 +28,49 @@
           <!-- Login Button -->
           <q-btn label="Login" color="primary" type="submit" class="full-width" />
 
+          <!-- Divider -->
+          <div class="text-center q-my-md">
+            <q-separator />
+            <span class="text-caption q-px-md">or continue with</span>
+            <q-separator />
+          </div>
+
+          <!-- OAuth Buttons -->
+          <div class="row q-gutter-md">
+            <div class="col">
+              <q-btn
+                label="Google"
+                icon="img:https://developers.google.com/identity/images/g-logo.png"
+                color="white"
+                text-color="dark"
+                outline
+                class="full-width"
+                :loading="googleLoading"
+                @click="signInWithGoogle"
+              />
+            </div>
+            <div class="col">
+              <q-btn
+                label="Microsoft"
+                icon="img:https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg"
+                color="white"
+                text-color="dark"
+                outline
+                class="full-width"
+                :loading="microsoftLoading"
+                @click="signInWithMicrosoft"
+              />
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div v-if="errorMessage" class="text-negative text-center q-mt-md">
+            {{ errorMessage }}
+          </div>
+
           <!-- Signup Link -->
           <div class="text-center q-mt-md">
-            <span>Don’t have an account? </span>
+            <span>Don't have an account? </span>
             <router-link to="/signup">Sign up</router-link>
           </div>
         </q-form>
@@ -42,15 +82,45 @@
 <script setup>
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import AuthService from 'src/services/auth.service'
 
 const authStore = useAuthStore()
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const googleLoading = ref(false)
+const microsoftLoading = ref(false)
 
 // Placeholder login function
 async function onSubmit() {
   // Implement actual login logic here
   await authStore.login({ email: email.value, password: password.value })
+}
+
+async function signInWithGoogle() {
+  googleLoading.value = true
+  errorMessage.value = ''
+  try {
+    await AuthService.signIn("google", authStore.invitationToken)
+  } catch (error) {
+    console.error('Google sign-in error:', error)
+    errorMessage.value = 'Failed to sign in with Google. Please try again.'
+  } finally {
+    googleLoading.value = false
+  }
+}
+
+async function signInWithMicrosoft() {
+  microsoftLoading.value = true
+  errorMessage.value = ''
+  try {
+    await AuthService.signIn("microsoft", authStore.invitationToken)
+  } catch (error) {
+    console.error('Microsoft sign-in error:', error)
+    errorMessage.value = 'Failed to sign in with Microsoft. Please try again.'
+  } finally {
+    microsoftLoading.value = false
+  }
 }
 </script>
   

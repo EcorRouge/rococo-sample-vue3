@@ -35,6 +35,11 @@ const routes = [
         component: () => import('pages/SetPasswordPage.vue'),
         meta: { requiresAuth: false },
       },
+      {
+        path: 'auth/callback',
+        component: () => import('pages/Auth/AuthCallback.vue'),
+        meta: { requiresAuth: false },
+      },
     ],
   },
 
