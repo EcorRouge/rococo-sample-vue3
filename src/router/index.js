@@ -52,6 +52,13 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     const isAuthenticated = authStore.isAuthenticated
     const requiresAuth = to.meta?.requiresAuth
 
+    // Redirect authenticated users away from auth pages (login, signup, etc.)
+    // This prevents authenticated users from accessing login/signup forms
+    if (isAuthenticated && (to.path === '/login' || to.path === '/signup' || to.path === '/forgot-password' || to.path.startsWith('/set-password'))) {
+      next({ path: '/dashboard' })
+      return
+    }
+
     if (requiresAuth && !isAuthenticated) {
       next({ path: '/login' })
     } else if (to.path === '/' && isAuthenticated) {

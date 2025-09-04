@@ -2,13 +2,15 @@ import { defineStore, acceptHMRUpdate } from 'pinia'
 import { Notify } from 'quasar'
 import axios from 'config/axios'
 import localStorageService from 'services/localStorage.service'
-import { handleAuthRequest } from '@/utils/apiHelper'
+import { handleAuthRequest, handleOAuthRequest } from '@/utils/apiHelper'
 
 // Constants for localStorage keys
 const STORAGE_KEYS = {
   USER: 'user',
   ACCESS_TOKEN: 'accessToken',
   ACCESS_TOKEN_EXPIRY: 'accessTokenExpiry',
+  INVITATION_TOKEN: 'invitationToken',
+  OAUTH_ERROR_MESSAGE: 'oauthErrorMessage',
 }
 
 // Helper function to get initial state from localStorage
@@ -16,6 +18,8 @@ const getInitialState = () => ({
   user: localStorageService.getItem(STORAGE_KEYS.USER) || null,
   accessToken: localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null,
   accessTokenExpiry: localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN_EXPIRY) || null,
+  invitationToken: localStorageService.getItem(STORAGE_KEYS.INVITATION_TOKEN) || null,
+  oauthErrorMessage: localStorageService.getItem(STORAGE_KEYS.OAUTH_ERROR_MESSAGE) || null,
 })
 
 export const useAuthStore = defineStore('auth', {
@@ -243,6 +247,53 @@ export const useAuthStore = defineStore('auth', {
     },
 
     /**
+     * Login with OAuth provider
+     */
+    async loginWithOAuth(provider, payload) {
+      try {
+        return await handleOAuthRequest(
+          this, 
+          () => axios.post(`/auth/${provider}/exchange`, payload), 
+          this.router
+        )
+      } catch (error) {
+        return this.handleApiError(error, 'OAuth login failed')
+      }
+    },
+
+    /**
+     * Set invitation token
+     */
+    setInvitationToken(token) {
+      this.invitationToken = token
+      localStorageService.setItem(STORAGE_KEYS.INVITATION_TOKEN, token)
+    },
+
+    /**
+     * Clear invitation token
+     */
+    clearInvitationToken() {
+      this.invitationToken = null
+      localStorageService.removeItem(STORAGE_KEYS.INVITATION_TOKEN)
+    },
+
+    /**
+     * Set OAuth error message
+     */
+    setOAuthErrorMessage(message) {
+      this.oauthErrorMessage = message
+      localStorageService.setItem(STORAGE_KEYS.OAUTH_ERROR_MESSAGE, message)
+    },
+
+    /**
+     * Clear OAuth error message
+     */
+    clearOAuthErrorMessage() {
+      this.oauthErrorMessage = null
+      localStorageService.removeItem(STORAGE_KEYS.OAUTH_ERROR_MESSAGE)
+    },
+
+    /**
      * Initialize store (useful for app startup)
      */
     initialize() {
@@ -250,11 +301,15 @@ export const useAuthStore = defineStore('auth', {
       const user = localStorageService.getItem(STORAGE_KEYS.USER)
       const accessToken = localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN)
       const accessTokenExpiry = localStorageService.getItem(STORAGE_KEYS.ACCESS_TOKEN_EXPIRY)
+      const invitationToken = localStorageService.getItem(STORAGE_KEYS.INVITATION_TOKEN)
+      const oauthErrorMessage = localStorageService.getItem(STORAGE_KEYS.OAUTH_ERROR_MESSAGE)
 
       // Only update state if we have data in localStorage
       this.user = user
       this.accessToken = accessToken
       this.accessTokenExpiry = accessTokenExpiry
+      this.invitationToken = invitationToken
+      this.oauthErrorMessage = oauthErrorMessage
     },
   },
 })
