@@ -28,16 +28,16 @@
           <!-- Login Button -->
           <q-btn label="Login" color="primary" type="submit" class="full-width" />
 
-          <!-- Divider -->
-          <div class="text-center q-my-md">
+          <!-- Divider (only show if OAuth is available) -->
+          <div v-if="hasOAuthProviders" class="text-center q-my-md">
             <q-separator />
             <span class="text-caption q-px-md">or continue with</span>
             <q-separator />
           </div>
 
-          <!-- OAuth Buttons -->
-          <div class="row q-gutter-md">
-            <div class="col">
+          <!-- OAuth Buttons (only show if providers are configured) -->
+          <div v-if="hasOAuthProviders" class="row q-gutter-md">
+            <div v-if="hasGoogleProvider" class="col">
               <q-btn
                 label="Google"
                 icon="img:https://developers.google.com/identity/images/g-logo.png"
@@ -49,7 +49,7 @@
                 @click="signInWithGoogle"
               />
             </div>
-            <div class="col">
+            <div v-if="hasMicrosoftProvider" class="col">
               <q-btn
                 label="Microsoft"
                 icon="img:https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg"
@@ -80,7 +80,7 @@
 </template>
   
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import AuthService from 'src/services/auth.service'
 
@@ -90,6 +90,19 @@ const password = ref('')
 const errorMessage = ref('')
 const googleLoading = ref(false)
 const microsoftLoading = ref(false)
+
+// Check if OAuth providers are configured
+const hasGoogleProvider = computed(() => {
+  return import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID.trim() !== ''
+})
+
+const hasMicrosoftProvider = computed(() => {
+  return import.meta.env.VITE_MICROSOFT_CLIENT_ID && import.meta.env.VITE_MICROSOFT_CLIENT_ID.trim() !== ''
+})
+
+const hasOAuthProviders = computed(() => {
+  return hasGoogleProvider.value || hasMicrosoftProvider.value
+})
 
 // Placeholder login function
 async function onSubmit() {
