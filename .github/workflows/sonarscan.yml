@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v3
-
+      
       - name: SonarQube Install and Execute Analysis
         env:
           SONAR_GLOBAL_TOKEN: ${{ secrets.SONAR_GLOBAL_TOKEN }}
@@ -36,4 +36,3 @@ jobs:
             -Dsonar.scm.disabled=true
           
           echo "✅ SonarQube scan completed successfully"
-
