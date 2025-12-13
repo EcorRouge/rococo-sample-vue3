@@ -2,6 +2,9 @@ import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [
@@ -40,16 +43,17 @@ export default defineConfig({
     }
   },
   resolve: {
-    alias: {
-      src: path.resolve(__dirname, './src'),
-      stores: path.resolve(__dirname, './src/stores'),
-      config: path.resolve(__dirname, './src/config'),
-      layouts: path.resolve(__dirname, './src/layouts'),
-      pages: path.resolve(__dirname, './src/pages'),
-      components: path.resolve(__dirname, './src/components'),
-      '#q-app': path.resolve(__dirname, './.quasar'),
-      '@': path.resolve(__dirname, './src')
-    }
+    alias: [
+      { find: 'src', replacement: path.resolve(__dirname, './src') },
+      { find: 'stores', replacement: path.resolve(__dirname, './src/stores') },
+      { find: 'config', replacement: path.resolve(__dirname, './src/config') },
+      { find: 'layouts', replacement: path.resolve(__dirname, './src/layouts') },
+      { find: 'pages', replacement: path.resolve(__dirname, './src/pages') },
+      { find: 'components', replacement: path.resolve(__dirname, './src/components') },
+      { find: 'assets', replacement: path.resolve(__dirname, './src/assets') },
+      { find: '#q-app', replacement: path.resolve(__dirname, './.quasar') },
+      { find: '@', replacement: path.resolve(__dirname, './src') }
+    ]
   }
 })
 

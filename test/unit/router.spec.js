@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 import { setActivePinia, createPinia } from 'pinia'
 
-// Mock #q-app/wrappers
+// Mock #q-app/wrappers - must be hoisted before imports
+// This ensures the mock works even if .quasar directory doesn't exist
 vi.mock('#q-app/wrappers', () => ({
   defineRouter: (fn) => fn
 }))
@@ -38,13 +39,15 @@ describe('router/index.js', () => {
     mockAuthStore.initialize = vi.fn()
     mockAuthStore.checkAndRefreshToken = vi.fn()
 
-    // Mock process.env
-    globalThis.process = {
-      env: {
-        SERVER: false,
-        VUE_ROUTER_MODE: 'history',
-        VUE_ROUTER_BASE: '/'
-      }
+    // Ensure process.env is set (from setup.js, but ensure VUE_ROUTER_BASE is always defined)
+    if (!globalThis.process?.env?.VUE_ROUTER_BASE) {
+      globalThis.process.env.VUE_ROUTER_BASE = '/'
+    }
+    if (!globalThis.process?.env?.VUE_ROUTER_MODE) {
+      globalThis.process.env.VUE_ROUTER_MODE = 'history'
+    }
+    if (globalThis.process?.env?.SERVER === undefined) {
+      globalThis.process.env.SERVER = false
     }
 
     // Import router factory
@@ -59,7 +62,11 @@ describe('router/index.js', () => {
   })
 
   it('should use history mode when VUE_ROUTER_MODE is history', async () => {
+    // Clear module cache to force re-import with new env
+    vi.resetModules()
+    
     globalThis.process.env.VUE_ROUTER_MODE = 'history'
+    globalThis.process.env.VUE_ROUTER_BASE = '/' // Ensure BASE is set
     
     const routerModule = await import('../../src/router/index.js')
     const newRouter = routerModule.default()
@@ -68,7 +75,11 @@ describe('router/index.js', () => {
   })
 
   it('should use hash mode when VUE_ROUTER_MODE is not history', async () => {
+    // Clear module cache to force re-import with new env
+    vi.resetModules()
+    
     globalThis.process.env.VUE_ROUTER_MODE = 'hash'
+    globalThis.process.env.VUE_ROUTER_BASE = '/' // Ensure BASE is set
     
     const routerModule = await import('../../src/router/index.js')
     const newRouter = routerModule.default()
@@ -77,7 +88,11 @@ describe('router/index.js', () => {
   })
 
   it('should use memory history on server', async () => {
+    // Clear module cache to force re-import with new env
+    vi.resetModules()
+    
     globalThis.process.env.SERVER = true
+    globalThis.process.env.VUE_ROUTER_BASE = '/' // Ensure BASE is set
     
     const routerModule = await import('../../src/router/index.js')
     const newRouter = routerModule.default()

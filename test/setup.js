@@ -44,11 +44,17 @@ vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-google-client-id')
 vi.stubEnv('VITE_SHOW_FUTURE', 'false')
 
 // Mock process.env for router tests
-globalThis.process = {
-  env: {
-    SERVER: false,
-    VUE_ROUTER_MODE: 'history',
-    VUE_ROUTER_BASE: '/'
-  }
+if (!globalThis.process) {
+  globalThis.process = {}
 }
+if (!globalThis.process.env) {
+  globalThis.process.env = {}
+}
+// Set default values
+globalThis.process.env.SERVER = globalThis.process.env.SERVER || false
+globalThis.process.env.VUE_ROUTER_MODE = globalThis.process.env.VUE_ROUTER_MODE || 'history'
+globalThis.process.env.VUE_ROUTER_BASE = globalThis.process.env.VUE_ROUTER_BASE || '/'
+
+// Mock window.scrollTo for router tests
+globalThis.window.scrollTo = vi.fn()
 
