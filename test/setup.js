@@ -22,7 +22,22 @@ globalThis.localStorage = {
   clear: vi.fn()
 }
 
-// Mock import.meta.env
+// Mock import.meta.env - use define to set it properly
+Object.defineProperty(globalThis, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_API_BASE_URL: 'http://localhost:5001',
+        VITE_MICROSOFT_CLIENT_ID: 'test-microsoft-client-id',
+        VITE_GOOGLE_CLIENT_ID: 'test-google-client-id',
+        VITE_SHOW_FUTURE: 'false'
+      }
+    }
+  },
+  writable: true
+})
+
+// Also use stubEnv as backup
 vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:5001')
 vi.stubEnv('VITE_MICROSOFT_CLIENT_ID', 'test-microsoft-client-id')
 vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-google-client-id')

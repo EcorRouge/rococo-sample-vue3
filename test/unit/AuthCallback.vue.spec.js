@@ -15,6 +15,30 @@ vi.mock('../../src/services/auth.service.js', () => ({
   default: mockAuthService
 }))
 
+// Mock axios config to avoid import issues
+vi.mock('config/axios', () => ({
+  default: {
+    post: vi.fn(),
+    get: vi.fn(),
+    interceptors: {
+      request: { use: vi.fn() },
+      response: { use: vi.fn() }
+    }
+  }
+}))
+
+// Mock auth store to avoid axios import
+const mockAuthStore = {
+  loginWithOAuth: vi.fn(),
+  clearInvitationToken: vi.fn(),
+  clearOAuthErrorMessage: vi.fn(),
+  oauthErrorMessage: { value: null }
+}
+
+vi.mock('src/stores/auth', () => ({
+  useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
 // Mock Quasar Notify
 vi.mock('quasar', async () => {
   const actual = await vi.importActual('quasar')
@@ -48,14 +72,13 @@ describe('AuthCallback.vue', () => {
       ]
     })
 
-    // Setup auth store mock
-    const { useAuthStore } = await import('../../src/stores/auth.js')
-    authStore = useAuthStore()
+    // Use the mocked auth store
+    authStore = mockAuthStore
     
-    // Mock auth store methods
-    authStore.loginWithOAuth = vi.fn()
-    authStore.clearInvitationToken = vi.fn()
-    authStore.clearOAuthErrorMessage = vi.fn()
+    // Reset mocks
+    authStore.loginWithOAuth.mockReset()
+    authStore.clearInvitationToken.mockReset()
+    authStore.clearOAuthErrorMessage.mockReset()
     
     // Reset globalThis.location
     globalThis.location = {

@@ -1,5 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import axios from 'axios'
+
+// Mock axios module
+vi.mock('axios', async () => {
+  const actual = await vi.importActual('axios')
+  
+  return {
+    default: {
+      ...actual.default,
+      create: (config) => {
+        // Create a real axios instance but mock its request method
+        const instance = actual.default.create(config)
+        const originalRequest = instance.request.bind(instance)
+        
+        // Make instance callable (axios instances are functions)
+        const callableInstance = function(config) {
+          return callableInstance.request(config)
+        }
+        
+        // Copy all properties from instance to callable function
+        Object.setPrototypeOf(callableInstance, instance)
+        Object.assign(callableInstance, instance)
+        
+        // Mock request to prevent real HTTP calls
+        callableInstance.request = vi.fn().mockImplementation((config) => {
+          // Return a resolved promise to simulate success
+          return Promise.resolve({ data: 'mocked', status: 200, config })
+        })
+        
+        return callableInstance
+      }
+    }
+  }
+})
 
 // Mock the auth store
 const mockAuthStore = {
@@ -31,6 +63,9 @@ describe('axios.config.js', () => {
     // Re-import apiClient to get fresh instance
     const module = await import('../../src/config/axios.js')
     apiClient = module.default
+    
+    // Ensure apiClient.request is mocked for retry tests
+    apiClient.request = vi.fn().mockResolvedValue({ data: 'success', status: 200 })
   })
 
   describe('Request Interceptor', () => {
@@ -63,7 +98,7 @@ describe('axios.config.js', () => {
   describe('Response Interceptor - 401 Handling', () => {
     it('should refresh token on 401 and retry request', async () => {
       mockAuthStore.isAuthenticated = true
-      mockAuthStore.accessToken = 'old-token'
+      mockAuthStore.accessToken = 'new-token'
       mockAuthStore.refreshToken.mockResolvedValue(true)
 
       const error = {
@@ -73,12 +108,13 @@ describe('axios.config.js', () => {
 
       const responseInterceptor = apiClient.interceptors.response.handlers[0]
 
-      // Mock apiClient to return success on retry
-      vi.spyOn(apiClient, 'request').mockResolvedValue({ data: 'success' })
+      // Ensure apiClient.request is mocked
+      apiClient.request = vi.fn().mockResolvedValue({ data: 'success' })
 
-      await responseInterceptor.rejected(error)
+      const result = await responseInterceptor.rejected(error)
 
       expect(mockAuthStore.refreshToken).toHaveBeenCalled()
+      expect(apiClient.request).toHaveBeenCalled()
     })
 
     it('should logout when refresh token fails', async () => {
@@ -117,7 +153,7 @@ describe('axios.config.js', () => {
 
       const responseInterceptor = apiClient.interceptors.response.handlers[0]
       
-      vi.spyOn(apiClient, 'request').mockResolvedValue({ data: 'success' })
+      apiClient.request = vi.fn().mockResolvedValue({ data: 'success' })
 
       const promise = responseInterceptor.rejected(error)
       
@@ -127,6 +163,7 @@ describe('axios.config.js', () => {
       await promise
 
       expect(error.config._retryCount).toBe(1)
+      expect(apiClient.request).toHaveBeenCalled()
 
       vi.useRealTimers()
     })
@@ -157,7 +194,7 @@ describe('axios.config.js', () => {
 
       const responseInterceptor = apiClient.interceptors.response.handlers[0]
       
-      vi.spyOn(apiClient, 'request').mockResolvedValue({ data: 'success' })
+      apiClient.request = vi.fn().mockResolvedValue({ data: 'success' })
 
       const promise = responseInterceptor.rejected(error)
       
@@ -167,6 +204,7 @@ describe('axios.config.js', () => {
       await promise
 
       expect(error.config._retryCount).toBe(1)
+      expect(apiClient.request).toHaveBeenCalled()
 
       vi.useRealTimers()
     })
