@@ -65,8 +65,17 @@ describe('router/index.js', () => {
     // Clear module cache to force re-import with new env
     vi.resetModules()
     
+    // Re-apply mocks after reset
+    vi.doMock('#q-app/wrappers', () => ({
+      defineRouter: (fn) => fn
+    }))
+    vi.doMock('src/stores/auth', () => ({
+      useAuthStore: vi.fn(() => mockAuthStore)
+    }))
+    
     globalThis.process.env.VUE_ROUTER_MODE = 'history'
-    globalThis.process.env.VUE_ROUTER_BASE = '/' // Ensure BASE is set
+    globalThis.process.env.VUE_ROUTER_BASE = '/'
+    globalThis.process.env.SERVER = false
     
     const routerModule = await import('../../src/router/index.js')
     const newRouter = routerModule.default()
@@ -78,8 +87,17 @@ describe('router/index.js', () => {
     // Clear module cache to force re-import with new env
     vi.resetModules()
     
+    // Re-apply mocks after reset
+    vi.doMock('#q-app/wrappers', () => ({
+      defineRouter: (fn) => fn
+    }))
+    vi.doMock('src/stores/auth', () => ({
+      useAuthStore: vi.fn(() => mockAuthStore)
+    }))
+    
     globalThis.process.env.VUE_ROUTER_MODE = 'hash'
-    globalThis.process.env.VUE_ROUTER_BASE = '/' // Ensure BASE is set
+    globalThis.process.env.VUE_ROUTER_BASE = '/'
+    globalThis.process.env.SERVER = false
     
     const routerModule = await import('../../src/router/index.js')
     const newRouter = routerModule.default()
@@ -91,8 +109,16 @@ describe('router/index.js', () => {
     // Clear module cache to force re-import with new env
     vi.resetModules()
     
+    // Re-apply mocks after reset
+    vi.doMock('#q-app/wrappers', () => ({
+      defineRouter: (fn) => fn
+    }))
+    vi.doMock('src/stores/auth', () => ({
+      useAuthStore: vi.fn(() => mockAuthStore)
+    }))
+    
     globalThis.process.env.SERVER = true
-    globalThis.process.env.VUE_ROUTER_BASE = '/' // Ensure BASE is set
+    globalThis.process.env.VUE_ROUTER_BASE = '/'
     
     const routerModule = await import('../../src/router/index.js')
     const newRouter = routerModule.default()
@@ -109,6 +135,16 @@ describe('router/index.js', () => {
       expect(mockAuthStore.initialize).toHaveBeenCalled()
     })
 
+    it('should not initialize auth store if access token exists', async () => {
+      mockAuthStore.accessToken = 'existing-token'
+      mockAuthStore.isTokenExpired = false
+      mockAuthStore.isAuthenticated = true
+
+      await router.push('/dashboard')
+
+      expect(mockAuthStore.initialize).not.toHaveBeenCalled()
+    })
+
     it('should check and refresh token if expired', async () => {
       mockAuthStore.accessToken = 'test-token'
       mockAuthStore.isTokenExpired = true
@@ -116,6 +152,16 @@ describe('router/index.js', () => {
       await router.push('/')
 
       expect(mockAuthStore.checkAndRefreshToken).toHaveBeenCalled()
+    })
+
+    it('should not refresh token if not expired', async () => {
+      mockAuthStore.accessToken = 'test-token'
+      mockAuthStore.isTokenExpired = false
+      mockAuthStore.isAuthenticated = true
+
+      await router.push('/dashboard')
+
+      expect(mockAuthStore.checkAndRefreshToken).not.toHaveBeenCalled()
     })
 
     it('should redirect authenticated users from login to dashboard', async () => {
