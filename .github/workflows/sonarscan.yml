@@ -3,7 +3,7 @@ name: sonarscan
 on:
   push:
     branches:
-      - main
+      - ilyaskarim-ROC-96
 
 jobs:
   sonarqube-scan:
