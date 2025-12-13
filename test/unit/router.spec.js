@@ -61,69 +61,81 @@ describe('router/index.js', () => {
     expect(router.options.routes.length).toBeGreaterThan(0)
   })
 
-  it('should use history mode when VUE_ROUTER_MODE is history', async () => {
-    // Clear module cache to force re-import with new env
-    vi.resetModules()
+  it('should have scroll behavior configured', () => {
+    expect(router.options.scrollBehavior).toBeDefined()
     
-    // Re-apply mocks after reset
-    vi.doMock('#q-app/wrappers', () => ({
-      defineRouter: (fn) => fn
-    }))
-    vi.doMock('src/stores/auth', () => ({
-      useAuthStore: vi.fn(() => mockAuthStore)
-    }))
-    
-    globalThis.process.env.VUE_ROUTER_MODE = 'history'
-    globalThis.process.env.VUE_ROUTER_BASE = '/'
-    globalThis.process.env.SERVER = false
-    
-    const routerModule = await import('../../src/router/index.js')
-    const newRouter = routerModule.default()
-    
-    expect(newRouter.options.history).toBeDefined()
+    const scrollResult = router.options.scrollBehavior()
+    expect(scrollResult).toEqual({ left: 0, top: 0 })
   })
 
-  it('should use hash mode when VUE_ROUTER_MODE is not history', async () => {
-    // Clear module cache to force re-import with new env
-    vi.resetModules()
-    
-    // Re-apply mocks after reset
-    vi.doMock('#q-app/wrappers', () => ({
-      defineRouter: (fn) => fn
-    }))
-    vi.doMock('src/stores/auth', () => ({
-      useAuthStore: vi.fn(() => mockAuthStore)
-    }))
-    
-    globalThis.process.env.VUE_ROUTER_MODE = 'hash'
-    globalThis.process.env.VUE_ROUTER_BASE = '/'
-    globalThis.process.env.SERVER = false
-    
-    const routerModule = await import('../../src/router/index.js')
-    const newRouter = routerModule.default()
-    
-    expect(newRouter.options.history).toBeDefined()
+  // Test history mode using the default history mode from beforeEach
+  it('should use history mode when VUE_ROUTER_MODE is history', () => {
+    // The beforeEach sets VUE_ROUTER_MODE = 'history' by default
+    expect(router.options.history).toBeDefined()
   })
 
-  it('should use memory history on server', async () => {
-    // Clear module cache to force re-import with new env
-    vi.resetModules()
-    
-    // Re-apply mocks after reset
-    vi.doMock('#q-app/wrappers', () => ({
-      defineRouter: (fn) => fn
-    }))
-    vi.doMock('src/stores/auth', () => ({
-      useAuthStore: vi.fn(() => mockAuthStore)
-    }))
-    
-    globalThis.process.env.SERVER = true
-    globalThis.process.env.VUE_ROUTER_BASE = '/'
-    
-    const routerModule = await import('../../src/router/index.js')
-    const newRouter = routerModule.default()
-    
-    expect(newRouter.options.history).toBeDefined()
+  describe('getHistoryMode', () => {
+    it('should return createMemoryHistory when SERVER is true', async () => {
+      // Import the function directly
+      const { getHistoryMode } = await import('../../src/router/index.js')
+      const { createMemoryHistory } = await import('vue-router')
+      
+      // Save original values
+      const originalServer = globalThis.process.env.SERVER
+      
+      // Set SERVER to true
+      globalThis.process.env.SERVER = true
+      
+      const result = getHistoryMode()
+      expect(result).toBe(createMemoryHistory)
+      
+      // Restore original values
+      globalThis.process.env.SERVER = originalServer
+    })
+
+    it('should return createWebHistory when VUE_ROUTER_MODE is history', async () => {
+      const { getHistoryMode } = await import('../../src/router/index.js')
+      const { createWebHistory } = await import('vue-router')
+      
+      // Save original values
+      const originalServer = globalThis.process.env.SERVER
+      const originalMode = globalThis.process.env.VUE_ROUTER_MODE
+      
+      // Set conditions for history mode - delete SERVER to make it falsy
+      delete globalThis.process.env.SERVER
+      globalThis.process.env.VUE_ROUTER_MODE = 'history'
+      
+      const result = getHistoryMode()
+      expect(result).toBe(createWebHistory)
+      
+      // Restore original values
+      if (originalServer !== undefined) {
+        globalThis.process.env.SERVER = originalServer
+      }
+      globalThis.process.env.VUE_ROUTER_MODE = originalMode
+    })
+
+    it('should return createWebHashHistory when VUE_ROUTER_MODE is not history', async () => {
+      const { getHistoryMode } = await import('../../src/router/index.js')
+      const { createWebHashHistory } = await import('vue-router')
+      
+      // Save original values
+      const originalServer = globalThis.process.env.SERVER
+      const originalMode = globalThis.process.env.VUE_ROUTER_MODE
+      
+      // Set conditions for hash mode - delete SERVER to make it falsy
+      delete globalThis.process.env.SERVER
+      globalThis.process.env.VUE_ROUTER_MODE = 'hash'
+      
+      const result = getHistoryMode()
+      expect(result).toBe(createWebHashHistory)
+      
+      // Restore original values
+      if (originalServer !== undefined) {
+        globalThis.process.env.SERVER = originalServer
+      }
+      globalThis.process.env.VUE_ROUTER_MODE = originalMode
+    })
   })
 
   describe('Navigation Guards', () => {
