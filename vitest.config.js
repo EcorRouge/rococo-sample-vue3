@@ -51,6 +51,8 @@ export default defineConfig({
       { find: 'pages', replacement: path.resolve(__dirname, './src/pages') },
       { find: 'components', replacement: path.resolve(__dirname, './src/components') },
       { find: 'assets', replacement: path.resolve(__dirname, './src/assets') },
+      // Use test mock for #q-app/wrappers since .quasar directory doesn't exist in CI
+      { find: '#q-app/wrappers', replacement: path.resolve(__dirname, './test/mocks/quasar-wrappers.js') },
       { find: '#q-app', replacement: path.resolve(__dirname, './.quasar') },
       { find: '@', replacement: path.resolve(__dirname, './src') }
     ]
